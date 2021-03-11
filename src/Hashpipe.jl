@@ -9,6 +9,13 @@ module Hashpipe
 
 export hashpipe_databuf_t, hashpipe_status_t
 
+const deps_file = joinpath(dirname(@__FILE__),"..","deps","deps.jl")
+if isfile(deps_file)
+    include(deps_file)
+else
+    error("Hashpipe library not properly installed. Have you built Hashpipe? Try Pkg.build(\"Hashpipe\")")
+end
+
 # Hashpipe error Codes
 const global HASHPIPE_OK         =  0
 const global HASHPIPE_TIMEOUT    =  1 # Call timed out 
@@ -53,6 +60,21 @@ mutable struct hashpipe_status_t
     p_lock::Ptr{UInt8} 
     p_buf::Ptr{UInt8}
 end
+
+# mutable struct hashpipe_thread_args
+#     thread_desc::Ptr{hashpipe_thread_desc_t}
+#     instance_id::Cint
+#     input_buffer::Cint
+#     output_buffer::Cint
+#     cpu_mask::UInt32
+#     finished::Cint
+#     finished_c::pthread_cond_t
+#     finished_m::pthread_mutex_t
+#     st::hashpipe_status_t
+#     ibuf::Ptr{hashpipe_databuf_t}
+#     obuf::Ptr{hashpipe_databuf_t}
+#     user_data::Ptr{Cvoid}
+# end
 
 
 

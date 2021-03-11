@@ -3,8 +3,12 @@ uuid = "89861ec2-aa86-43f2-b769-fb502ce05d7b"
 authors = ["Max Hawkins"]
 version = "0.1.0"
 
+[deps]
+Clang = "40e3b903-d033-50b4-a0cc-940c62c95e31"
+Hashpipe_jll = "a3e50fc0-e135-5cb8-92f4-a3765d91b533"
+
 [compat]
-julia >= "1.4"
+julia = "^1.4"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
