@@ -1,1 +1,4 @@
 /Manifest.toml
+/deps/deps.jl
+/deps/build.log
+/src/wrapper/*

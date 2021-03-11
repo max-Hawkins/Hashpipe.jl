@@ -1,6 +1,6 @@
 using Hashpipe_jll
 
-include("gen.jl")
+include("../gen/gen.jl")
 
 const depsfile = joinpath(@__DIR__, "deps.jl")
 

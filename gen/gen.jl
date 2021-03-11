@@ -2,13 +2,13 @@ using Hashpipe_jll
 using Clang
 using Clang.LibClang.Clang_jll
 
+# Headers and functions/structs not to wrap
+const EXCLUDE_HEADERS = ["hashpipe_packet.h", "hashpipe_pktsock.h", "hashpipe_udp.h"]
+const EXCLUDE_ITEMS = ["hgeti8", "hputi8", "hputu8", "hgetu8", "list_hashpipe_threads", "hashpipe_databuf_key", "hashpipe_databuf_wait_free_timeout", "hashpipe_databuf_wait_filled_timeout"]
+
 # LIBHASHPIPE_HEADERS are those headers to be wrapped.
 const LIBHASHPIPE_INCLUDE = joinpath(dirname(Hashpipe_jll.libhashpipe_path), "..", "include") |> normpath
-const LIBHASHPIPE_HEADERS = [joinpath(LIBHASHPIPE_INCLUDE, header) for header in readdir(LIBHASHPIPE_INCLUDE) if( endswith(header, ".h") && !endswith(header, "hashpipe_packet.h"))]
-
-const EXCLUDE_NAMES = ["hgeti8", "list_hashpipe_threads", "hashpipe_databuf_key", "hashpipe_databuf_wait_free_timeout", "hashpipe_databuf_wait_filled_timeout", "hashpipe_status_t", "hashpipe_databuf_t"]
-# hashpipe_thread_args, hashpipe_udp_params, 
-# TODO: need to find parsed names for these: not working currently. hashpipe_databuf_t, hashpipe_status_t
+const LIBHASHPIPE_HEADERS = [joinpath(LIBHASHPIPE_INCLUDE, header) for header in readdir(LIBHASHPIPE_INCLUDE) if(endswith(header, ".h") && !(header in EXCLUDE_HEADERS))]
 
 """
     exclude(name::String)
@@ -16,10 +16,8 @@ const EXCLUDE_NAMES = ["hgeti8", "list_hashpipe_threads", "hashpipe_databuf_key"
 Return whether or not to exclude function/struct from auto-wrapping
 """
 function exclude(name::String)::Bool
-    println("--- Name: $name")
-    for exclude_name in EXCLUDE_NAMES
+    for exclude_name in EXCLUDE_ITEMS
         if(startswith(name,exclude_name))
-            println("SKIPPING $name")
             return true
         end
     end
@@ -94,12 +92,14 @@ function advanced_generator()
     end
     close(api_stream)
     
+    # Perhaps do not need to have the common file. Just do these manually as needed since so few
+
     # write "common" definitions: types, typealiases, etc.
-    common_file = joinpath(@__DIR__, "..", "src", "wrapper", "libhashpipe_common.jl")
-    open(common_file, "w") do f
-        println(f, "# Automatically generated using Clang.jl\n")
-        print_buffer(f, dump_to_buffer(ctx.common_buffer))
-    end
+    # common_file = joinpath(@__DIR__, "..", "src", "wrapper", "libhashpipe_common.jl")
+    # open(common_file, "w") do f
+    #     println(f, "# Automatically generated using Clang.jl\n")
+    #     print_buffer(f, dump_to_buffer(ctx.common_buffer))
+    # end
     
     # uncomment the following code to generate dependency and template files
     # copydeps(dirname(api_file))

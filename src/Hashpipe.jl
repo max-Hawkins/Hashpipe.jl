@@ -7,6 +7,8 @@ Hashpipe C code written by Dave MacMahon: https://github.com/david-macmahon/hash
 """
 module Hashpipe
 
+# Inlcude Clang auto-wrapped functions from Hashpipe_jll installed library
+include("./wrapper/libhashpipe_api.jl") 
 export hashpipe_databuf_t, hashpipe_status_t
 
 const deps_file = joinpath(dirname(@__FILE__),"..","deps","deps.jl")
