@@ -11,6 +11,3 @@ open(depsfile, "w") do f
     println(f)
 end
 
-# Auto-wrap Hashpipe C-level functions
-advanced_generator()
-

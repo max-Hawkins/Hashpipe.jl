@@ -3,12 +3,14 @@ using Clang
 using Clang.LibClang.Clang_jll
 
 # Headers and functions/structs not to wrap
-const EXCLUDE_HEADERS = ["hashpipe_packet.h", "hashpipe_pktsock.h", "hashpipe_udp.h"]
-const EXCLUDE_ITEMS = ["hgeti8", "hputi8", "hputu8", "hgetu8", "list_hashpipe_threads", "hashpipe_databuf_key", "hashpipe_databuf_wait_free_timeout", "hashpipe_databuf_wait_filled_timeout"]
+const EXCLUDE_HEADERS = ["hashpipe_packet.h", "hashpipe_pktsock.h", "hashpipe_udp.h", "hashpipe_databuf.h", "hashpipe_status.h"]
+const EXCLUDE_ITEMS = ["hgeti8", "hputi8", "hputu8", "hgetu8", "list_hashpipe_threads", "hashpipe_databuf_key", "hashpipe_databuf_wait_free_timeout", "hashpipe_databuf_wait_filled_timeout"
+                    , "register_hashpipe_thread", "find_hashpipe_thread"]
 
 # LIBHASHPIPE_HEADERS are those headers to be wrapped.
 const LIBHASHPIPE_INCLUDE = joinpath(dirname(Hashpipe_jll.libhashpipe_path), "..", "include") |> normpath
 const LIBHASHPIPE_HEADERS = [joinpath(LIBHASHPIPE_INCLUDE, header) for header in readdir(LIBHASHPIPE_INCLUDE) if(endswith(header, ".h") && !(header in EXCLUDE_HEADERS))]
+
 
 """
     exclude(name::String)
@@ -105,3 +107,6 @@ function advanced_generator()
     # copydeps(dirname(api_file))
     # print_template(joinpath(dirname(api_file), "LibTemplate.jl"))
 end
+
+
+advanced_generator()

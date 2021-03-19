@@ -63,20 +63,70 @@ mutable struct hashpipe_status_t
     p_buf::Ptr{UInt8}
 end
 
-# mutable struct hashpipe_thread_args
-#     thread_desc::Ptr{hashpipe_thread_desc_t}
-#     instance_id::Cint
-#     input_buffer::Cint
-#     output_buffer::Cint
-#     cpu_mask::UInt32
-#     finished::Cint
-#     finished_c::pthread_cond_t
-#     finished_m::pthread_mutex_t
-#     st::hashpipe_status_t
-#     ibuf::Ptr{hashpipe_databuf_t}
-#     obuf::Ptr{hashpipe_databuf_t}
-#     user_data::Ptr{Cvoid}
-# end
+# These typedefs are used to declare pointers to a pipeline thread's init and
+# run functions.
+# typedef int (* initfunc_t)(hashpipe_thread_args_t *);
+# typedef void * (* runfunc_t)(hashpipe_thread_args_t *);
+
+# This typedefs are used to declare pointers to a pipline thread's data buffer
+# create function.
+# typedef hashpipe_databuf_t * (* databuf_createfunc_t)(int, int);
+
+# typedef struct {
+#   databuf_createfunc_t create;
+# } databuf_desc_t;
+
+struct databuf_desc_t
+    # C-compatible pointer to Julia databuf create function
+    # Generate using @cfunction macro
+    create::Ptr{Cvoid}
+end
+
+
+# The hashpipe_thread_desc structure is used to store metadata describing a
+# hashpipe thread.  Typically a hashpipe plugin will define one of these
+# hashpipe thread descriptors per hashpipe thread.
+# struct hashpipe_thread_desc {
+#   const char * name;
+#   const char * skey;
+#   initfunc_t init;
+#   runfunc_t run;
+#   databuf_desc_t ibuf_desc;
+#   databuf_desc_t obuf_desc;
+# };
+
+struct hashpipe_thread_desc_t
+    name::Cstring # TODO: Double check on NULL terminated assumption with Dave
+    skey::Cstring # ^^
+    init::Ptr{Cvoid}
+    run::Ptr{Cvoid}
+    ibuf_desc::databuf_desc_t
+    obuf_desc::databuf_desc_t
+end
+
+
+mutable struct hashpipe_thread_args_t
+    thread_desc::Ptr{hashpipe_thread_desc_t}
+    instance_id::Cint
+    input_buffer::Cint
+    output_buffer::Cint
+    cpu_mask::UInt32
+    finished::Cint
+    finished_c::Ptr{Cvoid} # TODO: Change to mimic pthread_cond_t
+    finished_m::Ptr{Cvoid} # TODO: Change to mimic pthread_mutex_t
+    st::hashpipe_status_t
+    ibuf::Ptr{hashpipe_databuf_t}
+    obuf::Ptr{hashpipe_databuf_t}
+    user_data::Ptr{Cvoid}
+end
+
+function register_hashpipe_thread(ptm)
+    ccall((:register_hashpipe_thread, libhashpipe), Cint, (Ptr{hashpipe_thread_desc_t},), ptm)
+end
+
+function find_hashpipe_thread(name)
+    ccall((:find_hashpipe_thread, libhashpipe), Ptr{hashpipe_thread_desc_t}, (Cstring,), name)
+end
 
 
 
@@ -293,6 +343,18 @@ function hashpipe_databuf_set_free(p_databuf::Ptr{hashpipe_databuf_t}, block_id:
                     Int, (Ptr{hashpipe_databuf_t}, Int), p_databuf, block_id)
     return error
 end
+
+###
+# Hashpipe Thread Functions
+###
+
+# function register_hashpipe_thread(ptm)
+#     ccall((:register_hashpipe_thread, libhashpipe), Cint, (Ptr{hashpipe_thread_desc_t},), ptm)
+# end
+
+# function find_hashpipe_thread(name)
+#     ccall((:find_hashpipe_thread, libhashpipe), Ptr{hashpipe_thread_desc_t}, (Cstring,), name)
+# end
 
 #----------------#
 # Hput Functions #
