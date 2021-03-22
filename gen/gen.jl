@@ -33,7 +33,7 @@ function basic_generator()
     # Add semaphore.h and FILE header into LIBHASHPIPE_INCLUDE string?
 
     wc = init(; headers = LIBHASHPIPE_HEADERS,
-                output_file = joinpath(@__DIR__, "libhashpipe_api.jl"),
+                output_file = joinpath(@__DIR__, "libhashpipe_api_auto.jl"),
                 common_file = joinpath(@__DIR__, "libhashpipe_common.jl"),
                 clang_includes = vcat(LIBHASHPIPE_INCLUDE, CLANG_INCLUDE),
                 clang_args = ["-I", joinpath(LIBHASHPIPE_INCLUDE, "..")],
@@ -63,7 +63,7 @@ function advanced_generator()
     ctx.options["is_struct_mutable"] = true
     
     # write output
-    api_file = joinpath(@__DIR__, "..", "src", "wrapper", "libhashpipe_api.jl")
+    api_file = joinpath(@__DIR__, "..", "src", "wrapper", "libhashpipe_api_auto.jl")
     api_stream = open(api_file, "w")
     
     for trans_unit in ctx.trans_units
