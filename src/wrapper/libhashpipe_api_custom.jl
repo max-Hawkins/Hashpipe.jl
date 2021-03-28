@@ -8,11 +8,13 @@ const global HASHPIPE_ERR_PARAM  = -3 # Parameter out of range
 const global HASHPIPE_ERR_KEY    = -4 # Requested key doesn't exist
 const global HASHPIPE_ERR_PACKET = -5 # Unexpected packet size
 
+abstract type HashpipeDatabuf end
+
 """
     hashpipe_databuf_t
     
 """
-struct hashpipe_databuf_t
+struct hashpipe_databuf_t <: HashpipeDatabuf
     data_type::NTuple{64, UInt8}
     header_size::Int # May need to change to Csize_t
     block_size::Int # May need to change to Csize_t
