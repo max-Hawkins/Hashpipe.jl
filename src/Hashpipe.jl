@@ -21,6 +21,17 @@ else
     error("Hashpipe library not properly installed. Have you built Hashpipe? Try Pkg.build(\"Hashpipe\")")
 end
 
+# Hashpipe thread abstract type
+abstract type HashpipeThread end
+
+function init(thread::HashpipeThread)
+    @error "Using default Hashpipe thread init function. Define a specific init function."
+end
+
+function run(thread::HashpipeThread)
+    @error "Using default Hashpipe thread run function. Define a specific run function."
+end
+
 #----------#
 # Displays #
 #----------#
