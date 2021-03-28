@@ -8,7 +8,6 @@ const global HASHPIPE_ERR_PARAM  = -3 # Parameter out of range
 const global HASHPIPE_ERR_KEY    = -4 # Requested key doesn't exist
 const global HASHPIPE_ERR_PACKET = -5 # Unexpected packet size
 
-abstract type HashpipeThread
 abstract type HashpipeDatabuf end
 
 """
