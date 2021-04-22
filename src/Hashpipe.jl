@@ -12,8 +12,8 @@ include("./wrapper/libhashpipe_api_custom.jl")
 # Inlcude Clang auto-wrapped functions from Hashpipe_jll installed library
 include("./wrapper/libhashpipe_api_auto.jl") 
 
-# export hashpipe_databuf_t, hashpipe_status_t
 
+# Inlcude libhashpipe and libhashpipestatus paths for C-calls
 const deps_file = joinpath(dirname(@__FILE__),"..","deps","deps.jl")
 if isfile(deps_file)
     include(deps_file)
@@ -37,7 +37,7 @@ end
 #----------#
 
 "Display hashpipe status"
-function Base.display(s::hashpipe_status_t)
+function Base.display(s::status_t)
     BUFFER_MAX_RECORDS = Int(STATUS_TOTAL_SIZE / STATUS_RECORD_SIZE)
     println("Instance ID: $(s.instance_id)")
     println("shmid: $(s.shmid)")
@@ -68,13 +68,13 @@ function Base.display(s::hashpipe_status_t)
 end
 
 "Display hashpipe status from reference"
-function Base.display(r::Ref{hashpipe_status_t})
+function Base.display(r::Ref{status_t})
     display(r[])
     return nothing
 end
 
 "Display hashpipe buffer"
-function Base.display(d::Hashpipe.hashpipe_databuf_t)
+function Base.display(d::Hashpipe.databuf_t)
     # Convert Ntuple to array and strip 0s before converting to string
     data_type_string = String(filter(x->x!=0x00, collect(d.data_type)))
     println("Data Type: $(data_type_string)")
@@ -87,20 +87,20 @@ function Base.display(d::Hashpipe.hashpipe_databuf_t)
 end
 
 "Display hashpipe databuf from pointer"
-function Base.display(p::Ptr{hashpipe_databuf_t})
-    databuf::hashpipe_databuf_t = unsafe_wrap(Array, p, 1)[]
+function Base.display(p::Ptr{databuf_t})
+    databuf::databuf_t = unsafe_wrap(Array, p, 1)[]
     display(databuf)
     return nothing
 end
 
-function hashpipe_status_buf_lock_unlock(f::Function, r_status::Ref{hashpipe_status_t})
+function status_buf_lock_unlock(f::Function, r_status::Ref{status_t})
         try
-            hashpipe_status_lock(r_status)
+            status_lock(r_status)
             f() # or f(st) TODO: test which of these is better
         catch e
             @error "Error locking hashpipe status buffer - Error: $e"
         finally
-            hashpipe_status_unlock(r_status)
+            status_unlock(r_status)
         end
 end
 
@@ -111,17 +111,17 @@ end
 
 # Todo Auto-generate all update_status possibilities
 
-function update_status(status::hashpipe_status_t, key::String, value::String)::Int8
+function update_status(status::status_t, key::String, value::String)::Int8
     key = Cstring(pointer(key)) # Need to convert for hput functions
-    error::Int8 = ccall((:hputs, "libhashpipestatus.so"),
+    error::Int8 = ccall((:hputs, libhashpipestatus),
                     Int, (Ptr{UInt8}, Cstring, Cstring),
                     status.p_buf, Cstring(pointer(key)), Cstring(pointer(value)))
     return error
 end
 
-function update_status(status::hashpipe_status_t, key::String, value::Int)::Int8
+function update_status(status::status_t, key::String, value::Int)::Int8
     key = Cstring(pointer(key)) # Need to convert for hput functions
-    error::Int8 = ccall((:hputi4, "libhashpipestatus.so"),
+    error::Int8 = ccall((:hputi4, libhashpipestatus),
                     Int, (Ptr{UInt8}, Cstring, Cint),
                     status.p_buf, Cstring(pointer(key)), Cint(value))
     return error
@@ -131,21 +131,21 @@ end
 
 # Auto-convert Julia string to Cstring
 function hputs(p_hstring::Ptr{UInt8}, p_keyword::String, p_cval::String)
-    error::Int = ccall((:hputs, "libhashpipestatus.so"),
+    error::Int = ccall((:hputs, libhashpipestatus),
                     Int, (Ptr{UInt8}, Cstring, Cstring),
                     p_hstring, Cstring(pointer(p_keyword)), Cstring(pointer(p_cval)))
     return error
 end
 
 function hputi4(p_hstring::Ptr{UInt8}, p_keyword::Cstring, p_ival::Cint)
-    error::Int = ccall((:hputi4, "libhashpipestatus.so"),
+    error::Int = ccall((:hputi4, libhashpipestatus),
                     Int, (Ptr{UInt8}, Cstring, Cint),
                     p_hstring, p_keyword, p_ival)
     return error
 end
 # Auto-convert julia string/int to Cstring/Cint
 function hputi4(p_hstring::Ptr{UInt8}, p_keyword::String, p_ival::Int)
-    error::Int = ccall((:hputi4, "libhashpipestatus.so"),
+    error::Int = ccall((:hputi4, libhashpipestatus),
                     Int, (Ptr{UInt8}, Cstring, Cint),
                     p_hstring, Cstring(pointer(p_keyword)), Cint(p_ival))
     return error
@@ -159,7 +159,7 @@ function pin_databuf_mem(db, bytes=-1)
         bytes = db.block_size
     end
 
-    hp_databuf = unsafe_wrap(Array{Main.Hashpipe.hashpipe_databuf_t}, db.p_hpguppi_db, (1))[1];
+    hp_databuf = unsafe_wrap(Array{Main.Hashpipe.databuf_t}, db.p_hpguppi_db, (1))[1];
     println("Pinning $bytes of Memory:")
     for i in 1:hp_databuf.n_block
         println("Block: $i")

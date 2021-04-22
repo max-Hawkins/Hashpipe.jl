@@ -11,10 +11,10 @@ const global HASHPIPE_ERR_PACKET = -5 # Unexpected packet size
 abstract type HashpipeDatabuf end
 
 """
-    hashpipe_databuf_t
+    databuf_t
     
 """
-struct hashpipe_databuf_t <: HashpipeDatabuf
+struct databuf_t <: HashpipeDatabuf
     data_type::NTuple{64, UInt8}
     header_size::Int # May need to change to Csize_t
     block_size::Int # May need to change to Csize_t
@@ -35,11 +35,11 @@ to existing status buffer.
 Example:
 '''
     instance_id = 0
-    status = hashpipe_status_t(0,0,0,0)
-    hashpipe_status_attach(instance_id, Ref(r_status))
+    status = status_t(0,0,0,0)
+    status_attach(instance_id, Ref(r_status))
 '''
 """
-mutable struct hashpipe_status_t
+mutable struct status_t
     instance_id::Cint
     shmid::Cint
     p_lock::Ptr{UInt8} 
@@ -48,12 +48,12 @@ end
 
 # These typedefs are used to declare pointers to a pipeline thread's init and
 # run functions.
-# typedef int (* initfunc_t)(hashpipe_thread_args_t *);
-# typedef void * (* runfunc_t)(hashpipe_thread_args_t *);
+# typedef int (* initfunc_t)(thread_args_t *);
+# typedef void * (* runfunc_t)(thread_args_t *);
 
 # This typedefs are used to declare pointers to a pipline thread's data buffer
 # create function.
-# typedef hashpipe_databuf_t * (* databuf_createfunc_t)(int, int);
+# typedef databuf_t * (* databuf_createfunc_t)(int, int);
 
 # typedef struct {
 #   databuf_createfunc_t create;
@@ -66,10 +66,10 @@ struct databuf_desc_t
 end
 
 
-# The hashpipe_thread_desc structure is used to store metadata describing a
+# The thread_desc structure is used to store metadata describing a
 # hashpipe thread.  Typically a hashpipe plugin will define one of these
 # hashpipe thread descriptors per hashpipe thread.
-# struct hashpipe_thread_desc {
+# struct thread_desc {
 #   const char * name;
 #   const char * skey;
 #   initfunc_t init;
@@ -78,7 +78,7 @@ end
 #   databuf_desc_t obuf_desc;
 # };
 
-struct hashpipe_thread_desc_t
+struct thread_desc_t
     name::Cstring # TODO: Double check on NULL terminated assumption with Dave
     skey::Cstring # ^^
     init::Ptr{Cvoid}
@@ -88,8 +88,8 @@ struct hashpipe_thread_desc_t
 end
 
 
-mutable struct hashpipe_thread_args_t
-    thread_desc::Ptr{hashpipe_thread_desc_t}
+mutable struct thread_args_t
+    thread_desc::Ptr{thread_desc_t}
     instance_id::Cint
     input_buffer::Cint
     output_buffer::Cint
@@ -97,18 +97,18 @@ mutable struct hashpipe_thread_args_t
     finished::Cint
     finished_c::Ptr{Cvoid} # TODO: Change to mimic pthread_cond_t
     finished_m::Ptr{Cvoid} # TODO: Change to mimic pthread_mutex_t
-    st::hashpipe_status_t
-    ibuf::Ptr{hashpipe_databuf_t}
-    obuf::Ptr{hashpipe_databuf_t}
+    st::status_t
+    ibuf::Ptr{databuf_t}
+    obuf::Ptr{databuf_t}
     user_data::Ptr{Cvoid}
 end
 
 function register_hashpipe_thread(ptm)
-    ccall((:register_hashpipe_thread, libhashpipe), Cint, (Ptr{hashpipe_thread_desc_t},), ptm)
+    ccall((:register_hashpipe_thread, libhashpipe), Cint, (Ptr{thread_desc_t},), ptm)
 end
 
 function find_hashpipe_thread(name)
-    ccall((:find_hashpipe_thread, libhashpipe), Ptr{hashpipe_thread_desc_t}, (Cstring,), name)
+    ccall((:find_hashpipe_thread, libhashpipe), Ptr{thread_desc_t}, (Cstring,), name)
 end
 
 
@@ -117,35 +117,35 @@ end
 #---------------------------#
 
 
-function hashpipe_status_exists(instance_id::Int)
+function status_exists(instance_id::Int)
     exists::Int8 = ccall((:hashpipe_status_exists, 
-                "libhashpipestatus.so"), 
+                libhashpipestatus), 
                 Int8, (Int8,), instance_id)
     return exists
 end
 
-function hashpipe_status_attach(instance_id::Int, p_hashpipe_status::Ref{hashpipe_status_t})
-    error::Int8 = ccall((:hashpipe_status_attach, "libhashpipestatus.so"),
-                    Int, (Int8, Ref{hashpipe_status_t}), instance_id, p_hashpipe_status)
+function status_attach(instance_id::Int, p_status::Ref{status_t})
+    error::Int8 = ccall((:hashpipe_status_attach, libhashpipestatus),
+                    Int, (Int8, Ref{status_t}), instance_id, p_status)
     return error
 end
 
-function hashpipe_status_lock(p_hashpipe_status::Ref{hashpipe_status_t})
-    error::Int8 = ccall((:hashpipe_status_lock, "libhashpipestatus.so"),
-                    Int, (Ref{hashpipe_status_t},), p_hashpipe_status)
+function status_lock(p_status::Ref{status_t})
+    error::Int8 = ccall((:hashpipe_status_lock, libhashpipestatus),
+                    Int, (Ref{status_t},), p_status)
     return error
 end
 
-function hashpipe_status_unlock(p_hashpipe_status::Ref{hashpipe_status_t})
-    error::Int8 = ccall((:hashpipe_status_unlock, "libhashpipestatus.so"),
-                    Int, (Ref{hashpipe_status_t},), p_hashpipe_status)
+function status_unlock(p_status::Ref{status_t})
+    error::Int8 = ccall((:hashpipe_status_unlock, libhashpipestatus),
+                    Int, (Ref{status_t},), p_status)
     return error
 end
 
 
-function hashpipe_status_clear(p_hashpipe_status::Ref{hashpipe_status_t})
-    ccall((:hashpipe_status_clear, "libhashpipestatus.so"),
-            Int, (Ref{hashpipe_status_t},), p_hashpipe_status)
+function status_clear(p_status::Ref{status_t})
+    ccall((:hashpipe_status_clear, libhashpipestatus),
+            Int, (Ref{status_t},), p_status)
     return nothing
 end
 
@@ -153,47 +153,47 @@ end
 # Hashpipe Databuf Functions #
 #----------------------------#
 
-function hashpipe_databuf_data(p_databuf::Ptr{hashpipe_databuf_t}, block_id::Int)
-    p_data::Ptr{UInt8} = ccall((:hashpipe_databuf_data, "libhashpipe.so"),
-                            Ptr{UInt8}, (Ptr{hashpipe_status_t}, Int8), p_databuf, block_id)
+function databuf_data(p_databuf::Ptr{databuf_t}, block_id::Int)
+    p_data::Ptr{UInt8} = ccall((:hashpipe_databuf_data, libhashpipe),
+                            Ptr{UInt8}, (Ptr{status_t}, Int8), p_databuf, block_id)
     return p_data
 end
 
 """
-    hashpipe_databuf_create(instance_id::Int, db_id::Int,
+    databuf_create(instance_id::Int, db_id::Int,
                             header_size::Int, block_size::Int, n_block::Int)
 
 """
-function hashpipe_databuf_create(instance_id::Int, db_id::Int,
+function databuf_create(instance_id::Int, db_id::Int,
             header_size::Int, block_size::Int, n_block::Int)
-    p_databuf::Ptr{hashpipe_databuf_t} = 
-            ccall((:hashpipe_databuf_create, "libhashpipe.so"),
-                Ptr{hashpipe_databuf_t},
+    p_databuf::Ptr{databuf_t} = 
+            ccall((:hashpipe_databuf_create, libhashpipe),
+                Ptr{databuf_t},
                 (Int8, Int8, Int, Int, Int),
                 instance_id, db_id, header_size, block_size, n_block)
     return p_databuf
 end
 
-function hashpipe_databuf_clear(p_databuf::Ptr{hashpipe_databuf_t})
-    ccall((:hashpipe_databuf_clear, "libhashpipe.so"),
-            Cvoid, (Ptr{hashpipe_status_t},), p_databuf)
+function databuf_clear(p_databuf::Ptr{databuf_t})
+    ccall((:hashpipe_databuf_clear, libhashpipe),
+            Cvoid, (Ptr{status_t},), p_databuf)
     return nothing
 end
-function hashpipe_databuf_attach(instance_id::Int, db_id::Int)
-    p_databuf::Ptr{hashpipe_databuf_t} = ccall((:hashpipe_databuf_attach, "libhashpipe.so"),
-                    Ptr{hashpipe_databuf_t}, (Int8, Int8), instance_id, db_id)
+function databuf_attach(instance_id::Int, db_id::Int)
+    p_databuf::Ptr{databuf_t} = ccall((:hashpipe_databuf_attach, libhashpipe),
+                    Ptr{databuf_t}, (Int8, Int8), instance_id, db_id)
     return p_databuf
 end
 
-function hashpipe_databuf_detach(p_databuf::Ptr{hashpipe_databuf_t})
-    error::Int = ccall((:hashpipe_databuf_attach, "libhashpipe.so"),
-                    Int, (Ptr{hashpipe_databuf_t},), p_databuf)
+function databuf_detach(p_databuf::Ptr{databuf_t})
+    error::Int = ccall((:hashpipe_databuf_attach, libhashpipe),
+                    Int, (Ptr{databuf_t},), p_databuf)
     return error
 end
 
 # Check hashpipe databuf status
-function hashpipe_check_databuf(instance_id::Int = 0, db_id::Int = 1)
-    p_databuf = hashpipe_databuf_attach(instance_id, db_id)
+function check_databuf(instance_id::Int = 0, db_id::Int = 1)
+    p_databuf = databuf_attach(instance_id, db_id)
     if p_databuf == C_NULL
         println("Error attaching to databuf $db_id (may not exist).")
         return nothing
@@ -203,22 +203,22 @@ function hashpipe_check_databuf(instance_id::Int = 0, db_id::Int = 1)
     return nothing
 end
 
-function hashpipe_databuf_block_status(p_databuf::Ptr{hashpipe_databuf_t}, block_id::Int)
-    block_status::Int = ccall((:hashpipe_databuf_block_status, "libhashpipe.so"),
-                    Int, (Ptr{hashpipe_databuf_t}, Int), p_databuf, block_id)
+function databuf_block_status(p_databuf::Ptr{databuf_t}, block_id::Int)
+    block_status::Int = ccall((:hashpipe_databuf_block_status, libhashpipe),
+                    Int, (Ptr{databuf_t}, Int), p_databuf, block_id)
     return block_status
 end
 
 # Return total lock status for databuf
-function hashpipe_databuf_total_status(p_databuf::Ptr{hashpipe_databuf_t})
-    total_status::UInt64 = ccall((:hashpipe_databuf_total_status, "libhashpipe.so"),
-                    Int, (Ptr{hashpipe_databuf_t},), p_databuf)
+function databuf_total_status(p_databuf::Ptr{databuf_t})
+    total_status::UInt64 = ccall((:hashpipe_databuf_total_status, libhashpipe),
+                    Int, (Ptr{databuf_t},), p_databuf)
     return total_status
 end
 
-function hashpipe_databuf_total_mask(p_databuf::Ptr{hashpipe_databuf_t})
-    total_mask::UInt64 = ccall((:hashpipe_databuf_total_mask, "libhashpipe.so"),
-                    UInt64, (Ptr{hashpipe_databuf_t},), p_databuf)
+function databuf_total_mask(p_databuf::Ptr{databuf_t})
+    total_mask::UInt64 = ccall((:hashpipe_databuf_total_mask, libhashpipe),
+                    UInt64, (Ptr{databuf_t},), p_databuf)
     return total_mask
 end
 
@@ -230,26 +230,26 @@ end
 # put the buffer in the specified state, returning error if
 # it is already in that state.
  
-function hashpipe_databuf_wait_filled(p_databuf::Ptr{hashpipe_databuf_t}, block_id::Int)
-    error::Int = ccall((:hashpipe_databuf_wait_filled, "libhashpipe.so"),
-                    Int, (Ptr{hashpipe_databuf_t}, Int), p_databuf, block_id)
+function databuf_wait_filled(p_databuf::Ptr{databuf_t}, block_id::Int)
+    error::Int = ccall((:hashpipe_databuf_wait_filled, libhashpipe),
+                    Int, (Ptr{databuf_t}, Int), p_databuf, block_id)
     return error
 end
 
-function hashpipe_databuf_wait_free(p_databuf::Ptr{hashpipe_databuf_t}, block_id::Int)
-    error::Int = ccall((:hashpipe_databuf_wait_free, "libhashpipe.so"),
-                    Int, (Ptr{hashpipe_databuf_t}, Int), p_databuf, block_id)
+function databuf_wait_free(p_databuf::Ptr{databuf_t}, block_id::Int)
+    error::Int = ccall((:hashpipe_databuf_wait_free, libhashpipe),
+                    Int, (Ptr{databuf_t}, Int), p_databuf, block_id)
     return error
 end
 
-function hashpipe_databuf_set_filled(p_databuf::Ptr{hashpipe_databuf_t}, block_id::Int)
-    error::Int = ccall((:hashpipe_databuf_set_filled, "libhashpipe.so"),
-                    Int, (Ptr{hashpipe_databuf_t}, Int), p_databuf, block_id)
+function databuf_set_filled(p_databuf::Ptr{databuf_t}, block_id::Int)
+    error::Int = ccall((:hashpipe_databuf_set_filled, libhashpipe),
+                    Int, (Ptr{databuf_t}, Int), p_databuf, block_id)
     return error
 end
 
-function hashpipe_databuf_set_free(p_databuf::Ptr{hashpipe_databuf_t}, block_id::Int)
-    error::Int = ccall((:hashpipe_databuf_set_free, "libhashpipe.so"),
-                    Int, (Ptr{hashpipe_databuf_t}, Int), p_databuf, block_id)
+function databuf_set_free(p_databuf::Ptr{databuf_t}, block_id::Int)
+    error::Int = ccall((:hashpipe_databuf_set_free, libhashpipe),
+                    Int, (Ptr{databuf_t}, Int), p_databuf, block_id)
     return error
 end
