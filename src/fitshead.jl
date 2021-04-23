@@ -1,6 +1,5 @@
-# Julia wrapper for header: fitshead.h
-# Automatically generated using Clang.jl
-
+# Julia wrappers and extensions for Hashpipe header fitshead.h
+# Automatically generated using Clang.jl before manual code extensions
 
 function hgeti2(hstring, keyword, val)
     ccall((:hgeti2, libhashpipe), Cint, (Cstring, Cstring, Ptr{Int16}), hstring, keyword, val)
@@ -138,6 +137,14 @@ function hputi4(hstring, keyword, ival)
     ccall((:hputi4, libhashpipe), Cint, (Cstring, Cstring, Cint), hstring, keyword, ival)
 end
 
+# Auto-convert julia string/int to Cstring/Cint
+function hputi4(p_hstring::Ptr{UInt8}, p_keyword::String, p_ival::Int)
+    error::Int = ccall((:hputi4, libhashpipestatus),
+                    Int, (Ptr{UInt8}, Cstring, Cint),
+                    p_hstring, Cstring(pointer(p_keyword)), Cint(p_ival))
+    return error
+end
+
 function hputu4(hstring, keyword, ival)
     ccall((:hputu4, libhashpipe), Cint, (Cstring, Cstring, UInt32), hstring, keyword, ival)
 end
@@ -156,6 +163,14 @@ end
 
 function hputs(hstring, keyword, cval)
     ccall((:hputs, libhashpipe), Cint, (Cstring, Cstring, Cstring), hstring, keyword, cval)
+end
+
+# Auto-convert Julia string to Cstring
+function hputs(p_hstring::Ptr{UInt8}, p_keyword::String, p_cval::String)
+    error::Int = ccall((:hputs, libhashpipestatus),
+                    Int, (Ptr{UInt8}, Cstring, Cstring),
+                    p_hstring, Cstring(pointer(p_keyword)), Cstring(pointer(p_cval)))
+    return error
 end
 
 function hputm(hstring, keyword, cval)
@@ -217,17 +232,3 @@ end
 function setleaveblank(hsh)
     ccall((:setleaveblank, libhashpipe), Cvoid, (Cint,), hsh)
 end
-# Julia wrapper for header: hashpipe.h
-# Automatically generated using Clang.jl
-
-
-function run_threads()
-    ccall((:run_threads, libhashpipe), Cint, ())
-end
-
-function get_cpu_affinity()
-    ccall((:get_cpu_affinity, libhashpipe), UInt32, ())
-end
-# Julia wrapper for header: hashpipe_error.h
-# Automatically generated using Clang.jl
-

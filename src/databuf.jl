@@ -1,18 +1,8 @@
-
-# Hashpipe error Codes
-const global HASHPIPE_OK         =  0
-const global HASHPIPE_TIMEOUT    =  1 # Call timed out 
-const global HASHPIPE_ERR_GEN    = -1 # Super non-informative
-const global HASHPIPE_ERR_SYS    = -2 # Failed system call
-const global HASHPIPE_ERR_PARAM  = -3 # Parameter out of range
-const global HASHPIPE_ERR_KEY    = -4 # Requested key doesn't exist
-const global HASHPIPE_ERR_PACKET = -5 # Unexpected packet size
-
 abstract type HashpipeDatabuf end
 
 """
     databuf_t
-    
+
 """
 struct databuf_t <: HashpipeDatabuf
     data_type::NTuple{64, UInt8}
@@ -21,29 +11,6 @@ struct databuf_t <: HashpipeDatabuf
     n_block::Cint
     shmid::Cint
     semid::Cint
-end
-
-# Status constants
-const global STATUS_TOTAL_SIZE = 184320 # 2880 * 64
-const global STATUS_RECORD_SIZE = 80
-
-"""
-Hashpipe Status struct
-
-May need to create empty status struct before trying to attaching
-to existing status buffer.
-Example:
-'''
-    instance_id = 0
-    status = status_t(0,0,0,0)
-    status_attach(instance_id, Ref(r_status))
-'''
-"""
-mutable struct status_t
-    instance_id::Cint
-    shmid::Cint
-    p_lock::Ptr{UInt8} 
-    p_buf::Ptr{UInt8}
 end
 
 # These typedefs are used to declare pointers to a pipeline thread's init and
@@ -59,99 +26,20 @@ end
 #   databuf_createfunc_t create;
 # } databuf_desc_t;
 
+"""
+    databuf_desc_t
+
+Struct containing
+"""
 struct databuf_desc_t
-    # C-compatible pointer to Julia databuf create function
-    # Generate using @cfunction macro
+    """
+    C-compatible pointer to Julia databuf create function
+    Generate using @cfunction macro
+    """
     create::Ptr{Cvoid}
 end
 
 
-# The thread_desc structure is used to store metadata describing a
-# hashpipe thread.  Typically a hashpipe plugin will define one of these
-# hashpipe thread descriptors per hashpipe thread.
-# struct thread_desc {
-#   const char * name;
-#   const char * skey;
-#   initfunc_t init;
-#   runfunc_t run;
-#   databuf_desc_t ibuf_desc;
-#   databuf_desc_t obuf_desc;
-# };
-
-struct thread_desc_t
-    name::Cstring # TODO: Double check on NULL terminated assumption with Dave
-    skey::Cstring # ^^
-    init::Ptr{Cvoid}
-    run::Ptr{Cvoid}
-    ibuf_desc::databuf_desc_t
-    obuf_desc::databuf_desc_t
-end
-
-
-mutable struct thread_args_t
-    thread_desc::Ptr{thread_desc_t}
-    instance_id::Cint
-    input_buffer::Cint
-    output_buffer::Cint
-    cpu_mask::UInt32
-    finished::Cint
-    finished_c::Ptr{Cvoid} # TODO: Change to mimic pthread_cond_t
-    finished_m::Ptr{Cvoid} # TODO: Change to mimic pthread_mutex_t
-    st::status_t
-    ibuf::Ptr{databuf_t}
-    obuf::Ptr{databuf_t}
-    user_data::Ptr{Cvoid}
-end
-
-function register_hashpipe_thread(ptm)
-    ccall((:register_hashpipe_thread, libhashpipe), Cint, (Ptr{thread_desc_t},), ptm)
-end
-
-function find_hashpipe_thread(name)
-    ccall((:find_hashpipe_thread, libhashpipe), Ptr{thread_desc_t}, (Cstring,), name)
-end
-
-
-#---------------------------#
-# Hashpipe Status Functions #
-#---------------------------#
-
-
-function status_exists(instance_id::Int)
-    exists::Int8 = ccall((:hashpipe_status_exists, 
-                libhashpipestatus), 
-                Int8, (Int8,), instance_id)
-    return exists
-end
-
-function status_attach(instance_id::Int, p_status::Ref{status_t})
-    error::Int8 = ccall((:hashpipe_status_attach, libhashpipestatus),
-                    Int, (Int8, Ref{status_t}), instance_id, p_status)
-    return error
-end
-
-function status_lock(p_status::Ref{status_t})
-    error::Int8 = ccall((:hashpipe_status_lock, libhashpipestatus),
-                    Int, (Ref{status_t},), p_status)
-    return error
-end
-
-function status_unlock(p_status::Ref{status_t})
-    error::Int8 = ccall((:hashpipe_status_unlock, libhashpipestatus),
-                    Int, (Ref{status_t},), p_status)
-    return error
-end
-
-
-function status_clear(p_status::Ref{status_t})
-    ccall((:hashpipe_status_clear, libhashpipestatus),
-            Int, (Ref{status_t},), p_status)
-    return nothing
-end
-
-#----------------------------#
-# Hashpipe Databuf Functions #
-#----------------------------#
 
 function databuf_data(p_databuf::Ptr{databuf_t}, block_id::Int)
     p_data::Ptr{UInt8} = ccall((:hashpipe_databuf_data, libhashpipe),
@@ -166,7 +54,7 @@ end
 """
 function databuf_create(instance_id::Int, db_id::Int,
             header_size::Int, block_size::Int, n_block::Int)
-    p_databuf::Ptr{databuf_t} = 
+    p_databuf::Ptr{databuf_t} =
             ccall((:hashpipe_databuf_create, libhashpipe),
                 Ptr{databuf_t},
                 (Int8, Int8, Int, Int, Int),
@@ -192,6 +80,11 @@ function databuf_detach(p_databuf::Ptr{databuf_t})
 end
 
 # Check hashpipe databuf status
+"""
+    check_databuf(instance_id=0, db_id=1)
+
+Display databuf information with given databuf ID and instance ID.
+"""
 function check_databuf(instance_id::Int = 0, db_id::Int = 1)
     p_databuf = databuf_attach(instance_id, db_id)
     if p_databuf == C_NULL
@@ -229,7 +122,7 @@ end
 # until the specified state happens.  The "set" functions
 # put the buffer in the specified state, returning error if
 # it is already in that state.
- 
+
 function databuf_wait_filled(p_databuf::Ptr{databuf_t}, block_id::Int)
     error::Int = ccall((:hashpipe_databuf_wait_filled, libhashpipe),
                     Int, (Ptr{databuf_t}, Int), p_databuf, block_id)
@@ -252,4 +145,43 @@ function databuf_set_free(p_databuf::Ptr{databuf_t}, block_id::Int)
     error::Int = ccall((:hashpipe_databuf_set_free, libhashpipe),
                     Int, (Ptr{databuf_t}, Int), p_databuf, block_id)
     return error
+end
+
+"""
+    Base.display(d::Hashpipe.databuf_t)
+
+Display for hashpipe buffers.
+"""
+function Base.display(d::Hashpipe.databuf_t)
+    # Convert Ntuple to array and strip 0s before converting to string
+    data_type_string = String(filter(x->x!=0x00, collect(d.data_type)))
+    println("Data Type: $(data_type_string)")
+    println("Header Size: $(d.header_size)")
+    println("Num Blocks: $(d.n_block)")
+    println("Block Size: $(d.block_size)")
+    println("shmid: $(d.shmid)")
+    println("semid: $(d.semid)")
+    return nothing
+end
+
+"""
+    Base.display(p::Ptr{databuf_t})
+
+Display hashpipe databuf from pointer
+"""
+function Base.display(p::Ptr{databuf_t})
+    databuf::databuf_t = unsafe_wrap(Array, p, 1)[]
+    display(databuf)
+    return nothing
+end
+
+function status_buf_lock_unlock(f::Function, r_status::Ref{status_t})
+        try
+            status_lock(r_status)
+            f() # or f(st) TODO: test which of these is better
+        catch e
+            @error "Error locking hashpipe status buffer - Error: $e"
+        finally
+            status_unlock(r_status)
+        end
 end
