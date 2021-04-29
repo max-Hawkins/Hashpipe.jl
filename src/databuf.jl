@@ -3,6 +3,7 @@ abstract type HashpipeDatabuf end
 """
     databuf_t
 
+Contain data pertaining to a databuffer.
 """
 struct databuf_t <: HashpipeDatabuf
     data_type::NTuple{64, UInt8}
@@ -12,7 +13,7 @@ struct databuf_t <: HashpipeDatabuf
     shmid::Cint
     semid::Cint
 end
-
+# From C code:
 # These typedefs are used to declare pointers to a pipeline thread's init and
 # run functions.
 # typedef int (* initfunc_t)(thread_args_t *);
@@ -27,20 +28,23 @@ end
 # } databuf_desc_t;
 
 """
-    databuf_desc_t
+    struct databuf_desc_t
 
-Struct containing
+Contain the pointer to the databuf create function.
 """
 struct databuf_desc_t
     """
-    C-compatible pointer to Julia databuf create function
-    Generate using @cfunction macro
+    C-compatible pointer to Julia databuf create function.
+    Generate using @cfunction macro.
     """
     create::Ptr{Cvoid}
 end
 
+"""
+    databuf_data(p_databuf::Ptr{databuf_t}, block_id::Int)
 
-
+Return the pointer to the associated databuffer's block's data
+"""
 function databuf_data(p_databuf::Ptr{databuf_t}, block_id::Int)
     p_data::Ptr{UInt8} = ccall((:hashpipe_databuf_data, libhashpipe),
                             Ptr{UInt8}, (Ptr{status_t}, Int8), p_databuf, block_id)
@@ -48,9 +52,9 @@ function databuf_data(p_databuf::Ptr{databuf_t}, block_id::Int)
 end
 
 """
-    databuf_create(instance_id::Int, db_id::Int,
-                            header_size::Int, block_size::Int, n_block::Int)
+    databuf_create(instance_id::Int, db_id::Int, header_size::Int, block_size::Int, n_block::Int)
 
+Create a databuffer with given parameters.
 """
 function databuf_create(instance_id::Int, db_id::Int,
             header_size::Int, block_size::Int, n_block::Int)
@@ -79,7 +83,6 @@ function databuf_detach(p_databuf::Ptr{databuf_t})
     return error
 end
 
-# Check hashpipe databuf status
 """
     check_databuf(instance_id=0, db_id=1)
 
@@ -96,13 +99,22 @@ function check_databuf(instance_id::Int = 0, db_id::Int = 1)
     return nothing
 end
 
+"""
+    databuf_block_status(p_databuf::Ptr{databuf_t}, block_id::Int)
+
+Return the status of the selected data block of the given databuffer.
+"""
 function databuf_block_status(p_databuf::Ptr{databuf_t}, block_id::Int)
     block_status::Int = ccall((:hashpipe_databuf_block_status, libhashpipe),
                     Int, (Ptr{databuf_t}, Int), p_databuf, block_id)
     return block_status
 end
 
-# Return total lock status for databuf
+"""
+    databuf_total_status(p_databuf::Ptr{databuf_t})
+
+Return the total lock status for the given databuffer.
+"""
 function databuf_total_status(p_databuf::Ptr{databuf_t})
     total_status::UInt64 = ccall((:hashpipe_databuf_total_status, libhashpipe),
                     Int, (Ptr{databuf_t},), p_databuf)
@@ -115,32 +127,59 @@ function databuf_total_mask(p_databuf::Ptr{databuf_t})
     return total_mask
 end
 
-# Databuf locking functions.  Each block in the buffer
-# can be marked as free or filled.  The "wait" functions
-# block (i.e. sleep) until the specified state happens.
+# Databuf locking functions
+# Each block in the buffer can be marked as free or filled.
+# The "wait" functions block (i.e. sleep) until the specified state happens.
 # The "busywait" functions busy-wait (i.e. do NOT sleep)
 # until the specified state happens.  The "set" functions
 # put the buffer in the specified state, returning error if
 # it is already in that state.
+"""
+    databuf_wait_filled(p_databuf::Ptr{databuf_t}, block_id::Int)
 
+Wait for the given block of data to be filled.
+
+See also: [`databuf_wait_free`](@ref), [`databuf_set_filled`](@ref), [`databuf_set_free`](@ref)
+"""
 function databuf_wait_filled(p_databuf::Ptr{databuf_t}, block_id::Int)
     error::Int = ccall((:hashpipe_databuf_wait_filled, libhashpipe),
                     Int, (Ptr{databuf_t}, Int), p_databuf, block_id)
     return error
 end
 
+"""
+    databuf_wait_free(p_databuf::Ptr{databuf_t}, block_id::Int)
+
+Wait for the given block of data to be freed.
+
+See also: [`databuf_wait_filled`](@ref), [`databuf_set_filled`](@ref), [`databuf_set_free`](@ref)
+"""
 function databuf_wait_free(p_databuf::Ptr{databuf_t}, block_id::Int)
     error::Int = ccall((:hashpipe_databuf_wait_free, libhashpipe),
                     Int, (Ptr{databuf_t}, Int), p_databuf, block_id)
     return error
 end
 
+"""
+    databuf_set_filled(p_databuf::Ptr{databuf_t}, block_id::Int)
+
+Set the given block of data as filled. Return an error if the block is already filled.
+
+See also: [`databuf_wait_filled`](@ref), [`databuf_wait_free`](@ref), [`databuf_set_free`](@ref)
+"""
 function databuf_set_filled(p_databuf::Ptr{databuf_t}, block_id::Int)
     error::Int = ccall((:hashpipe_databuf_set_filled, libhashpipe),
                     Int, (Ptr{databuf_t}, Int), p_databuf, block_id)
     return error
 end
 
+"""
+    databuf_set_free(p_databuf::Ptr{databuf_t}, block_id::Int)
+
+Set the given block of data as free. Return an error if the block is already free.
+
+See also: [`databuf_wait_filled`](@ref), [`databuf_wait_free`](@ref), [`databuf_set_filled`](@ref)
+"""
 function databuf_set_free(p_databuf::Ptr{databuf_t}, block_id::Int)
     error::Int = ccall((:hashpipe_databuf_set_free, libhashpipe),
                     Int, (Ptr{databuf_t}, Int), p_databuf, block_id)
@@ -150,7 +189,7 @@ end
 """
     Base.display(d::Hashpipe.databuf_t)
 
-Display for hashpipe buffers.
+Display a Hashpipe databuffer nicely in REPL.
 """
 function Base.display(d::Hashpipe.databuf_t)
     # Convert Ntuple to array and strip 0s before converting to string
@@ -167,7 +206,7 @@ end
 """
     Base.display(p::Ptr{databuf_t})
 
-Display hashpipe databuf from pointer
+Display Hashpipe databuffer from pointer nicely in REPL.
 """
 function Base.display(p::Ptr{databuf_t})
     databuf::databuf_t = unsafe_wrap(Array, p, 1)[]
@@ -175,6 +214,15 @@ function Base.display(p::Ptr{databuf_t})
     return nothing
 end
 
+"""
+    status_buf_lock_unlock(f::Function, r_status::Ref{status_t})
+
+Safely lock and unlock a shared status buffer for updating its values. This must be done
+so that the status buffer values aren't changed by multiple processes at the same time.
+
+Example:
+
+"""
 function status_buf_lock_unlock(f::Function, r_status::Ref{status_t})
         try
             status_lock(r_status)

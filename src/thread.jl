@@ -20,7 +20,11 @@ end
 #   databuf_desc_t ibuf_desc;
 #   databuf_desc_t obuf_desc;
 # };
+"""
+    thread_desc_t
 
+Metadata describing a Hashpipe threa (usually defined by a plugin per thread).
+"""
 struct thread_desc_t
     name::Cstring # TODO: Double check on NULL terminated assumption with Dave
     skey::Cstring # ^^
@@ -30,7 +34,11 @@ struct thread_desc_t
     obuf_desc::databuf_desc_t
 end
 
+"""
+    thread_args_t
 
+Implementation data for a Hashpipe thread.
+"""
 mutable struct thread_args_t
     thread_desc::Ptr{thread_desc_t}
     instance_id::Cint
