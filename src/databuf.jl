@@ -1,9 +1,9 @@
 abstract type HashpipeDatabuf end
 
 """
-    databuf_t
+    databuf_t <: HashpipeDatabuf
 
-Contain data pertaining to a databuffer.
+Contain data pertaining to a Hashpipe databuffer.
 """
 struct databuf_t <: HashpipeDatabuf
     data_type::NTuple{64, UInt8}
@@ -43,7 +43,7 @@ end
 """
     databuf_data(p_databuf::Ptr{databuf_t}, block_id::Int)
 
-Return the pointer to the associated databuffer's block's data
+Return the pointer to the associated databuffer's block's data.
 """
 function databuf_data(p_databuf::Ptr{databuf_t}, block_id::Int)
     p_data::Ptr{UInt8} = ccall((:hashpipe_databuf_data, libhashpipe),
@@ -66,17 +66,33 @@ function databuf_create(instance_id::Int, db_id::Int,
     return p_databuf
 end
 
+"""
+    databuf_clear(p_databuf::Ptr{databuf_t})
+
+Clear the data in a databuf.
+"""
 function databuf_clear(p_databuf::Ptr{databuf_t})
     ccall((:hashpipe_databuf_clear, libhashpipe),
             Cvoid, (Ptr{status_t},), p_databuf)
     return nothing
 end
+
+"""
+    databuf_attach(instance_id::Int, db_id::Int)
+
+Attach a databuf to a Hashpipe instance.
+"""
 function databuf_attach(instance_id::Int, db_id::Int)
     p_databuf::Ptr{databuf_t} = ccall((:hashpipe_databuf_attach, libhashpipe),
                     Ptr{databuf_t}, (Int8, Int8), instance_id, db_id)
     return p_databuf
 end
 
+"""
+    databuf_detach(instance_id::Int, db_id::Int)
+
+Detach a databuf from a Hashpipe instance.
+"""
 function databuf_detach(p_databuf::Ptr{databuf_t})
     error::Int = ccall((:hashpipe_databuf_attach, libhashpipe),
                     Int, (Ptr{databuf_t},), p_databuf)
@@ -86,7 +102,7 @@ end
 """
     check_databuf(instance_id=0, db_id=1)
 
-Display databuf information with given databuf ID and instance ID.
+Display databuf information of a given databuf of a Hashpipe instance.
 """
 function check_databuf(instance_id::Int = 0, db_id::Int = 1)
     p_databuf = databuf_attach(instance_id, db_id)
@@ -121,6 +137,9 @@ function databuf_total_status(p_databuf::Ptr{databuf_t})
     return total_status
 end
 
+"""
+    databuf_total_mask(p_databuf::Ptr{databuf_t})
+"""
 function databuf_total_mask(p_databuf::Ptr{databuf_t})
     total_mask::UInt64 = ccall((:hashpipe_databuf_total_mask, libhashpipe),
                     UInt64, (Ptr{databuf_t},), p_databuf)

@@ -1,11 +1,23 @@
 # Status constants
+"""
+    const global STATUS_TOTAL_SIZE = 184320
+
+The maximum size of a HASHPIPE status buffer - 184,320 bytes.
+"""
 const global STATUS_TOTAL_SIZE = 184320 # 2880 * 64
+"""
+    const global STATUS_RECORD_SIZE = 80
+
+The size of a status record - 80 characters.
+"""
 const global STATUS_RECORD_SIZE = 80
 
 """
-Hashpipe Status struct
+    Hashpipe Status struct
 
-May need to create empty status struct before trying to attaching
+Data representing a Hashpipe status buffer.
+
+Need to create empty status struct before trying to attaching
 to existing status buffer.
 Example:
 '''
@@ -15,9 +27,13 @@ Example:
 '''
 """
 mutable struct status_t
+    "Instance ID of this status buffer. DO NOT SET/CHANGE!"
     instance_id::Cint
+    "Shared memory segment id."
     shmid::Cint
+    "POSIX semaphore descriptor for locking "
     p_lock::Ptr{UInt8}
+    "Pointer to data area."
     p_buf::Ptr{UInt8}
 end
 
@@ -25,6 +41,8 @@ end
     status_exists(instance_id)
 
 Check whether or not the Hashpipe status buffer exists for the given Hashpipe instance.
+
+Returns non-zero if the status buffer for instance already exists.
 """
 function status_exists(instance_id::Int)
     exists::Int8 = ccall((:hashpipe_status_exists,
@@ -37,7 +55,9 @@ end
     status_attach(instance_id::Int, p_status::Ref{status_t})
 
 Populate the Hashpipe status pointed to by p_status with the status values of the Hashpipe
-instance given.
+instance given (created if doesn't already exist).
+
+Attach/create lock semaphore as well.  Return nonzero on error.
 """
 function status_attach(instance_id::Int, p_status::Ref{status_t})
     error::Int8 = ccall((:hashpipe_status_attach, libhashpipestatus),
@@ -49,6 +69,8 @@ end
     status_lock(p_status::Ref{status_t})
 
 Lock the status pointed to by p_status (probably for updating status values).
+
+If locked, will sleep while waiting for the buffer to become unlocked.
 """
 function status_lock(p_status::Ref{status_t})
     error::Int8 = ccall((:hashpipe_status_lock, libhashpipestatus),
@@ -60,6 +82,8 @@ end
     status_unlock(p_status::Ref{status_t})
 
 Unlock the status pointed to by p_status (probably after updating status values).
+
+If unlocked, will sleep while waiting for the buffer to become locked.
 """
 function status_unlock(p_status::Ref{status_t})
     error::Int8 = ccall((:hashpipe_status_unlock, libhashpipestatus),
@@ -67,6 +91,11 @@ function status_unlock(p_status::Ref{status_t})
     return error
 end
 
+"""
+    status_clear(p_status::Ref{status_t})
+
+Clear the status values of the status buffer.
+"""
 function status_clear(p_status::Ref{status_t})
     ccall((:hashpipe_status_clear, libhashpipestatus),
             Int, (Ref{status_t},), p_status)

@@ -1,20 +1,55 @@
 """
     Hashpipe Module
 
-C Hashpipe functions ported for Julia usability with pure-Julian extensions.
+C Hashpipe functions for the High-Availablity Shared Pipeline Engine ported for Julia usability with pure-Julian extensions.
 Written by Max Hawkins
 Hashpipe C code written by Dave MacMahon: https://github.com/david-macmahon/hashpipe
 """
 module Hashpipe
 
 # Hashpipe error Codes
+"""
+    HASHPIPE_OK
+
+Status code signifying successful operation.
+"""
 const HASHPIPE_OK         =  0
-const HASHPIPE_TIMEOUT    =  1 # Call timed out 
-const HASHPIPE_ERR_GEN    = -1 # Super non-informative
-const HASHPIPE_ERR_SYS    = -2 # Failed system call
-const HASHPIPE_ERR_PARAM  = -3 # Parameter out of range
-const HASHPIPE_ERR_KEY    = -4 # Requested key doesn't exist
-const HASHPIPE_ERR_PACKET = -5 # Unexpected packet size
+"""
+    HASHPIPE_TIMEOUT
+
+Status code signifying call timeout.
+"""
+const HASHPIPE_TIMEOUT    =  1 
+"""
+    HASHPIPE_ERR_GEN
+
+Status code signifying an unknown error?
+"""
+const HASHPIPE_ERR_GEN    = -1 # Super non-informative???
+"""
+    HASHPIPE_ERR_SYS
+
+Status code signifying a failed system call.
+"""
+const HASHPIPE_ERR_SYS    = -2
+"""
+    HASHPIPE_ERR_PARAM
+
+Status code signifying parameter out of valid range.
+"""
+const HASHPIPE_ERR_PARAM  = -3
+"""
+    HASHPIPE_ERR_KEY
+
+Status code signifying requested key doesn't exist.
+"""
+const HASHPIPE_ERR_KEY    = -4
+"""
+    HASHPIPE_ERR_PACKET
+
+Status code signifying unexpected packet size.
+"""
+const HASHPIPE_ERR_PACKET = -5
 
 # Inlcude libhashpipe and libhashpipestatus paths for C-calls
 const deps_file = joinpath(dirname(@__FILE__),"..","deps","deps.jl")
