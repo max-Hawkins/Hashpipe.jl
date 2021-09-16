@@ -94,13 +94,26 @@ end
 """
     status_clear(p_status::Ref{status_t})
 
-Clear the status values of the status buffer.
+Clear the status values of the status buffer shared memory.
 """
 function status_clear(p_status::Ref{status_t})
     ccall((:hashpipe_status_clear, libhashpipestatus),
             Int, (Ref{status_t},), p_status)
     return nothing
 end
+
+""" 
+    hashpipe_status_chkinit(p_status::Ref{status_t})
+
+Check the status buffer for appropriate formatting (existence of "END").
+If not found, zero it out and add END.
+"""
+function hashpipe_status_chkinit(p_status::Ref{status_t})
+    ccall((:hashpipe_status_chkinit, libhashpipestatus),
+            Int, (Ref{status_t},), p_status)
+    return nothing
+end
+
 
 """
     Base.display(s::status_t)
