@@ -103,12 +103,12 @@ function status_clear(p_status::Ref{status_t})
 end
 
 """ 
-    hashpipe_status_chkinit(p_status::Ref{status_t})
+    status_chkinit(p_status::Ref{status_t})
 
 Check the status buffer for appropriate formatting (existence of "END").
 If not found, zero it out and add END.
 """
-function hashpipe_status_chkinit(p_status::Ref{status_t})
+function status_chkinit(p_status::Ref{status_t})
     ccall((:hashpipe_status_chkinit, libhashpipestatus),
             Int, (Ref{status_t},), p_status)
     return nothing
