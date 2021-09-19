@@ -1,3 +1,5 @@
+export register_hashpipe_thread, find_hashpipe_thread
+
 # Hashpipe thread abstract type
 """
     HashpipeThread

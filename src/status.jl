@@ -1,3 +1,6 @@
+export status_t, status_exists, status_attach, status_detach, status_lock, status_unlock,
+        status_clear, status_chkinit, update_status, status_buf_lock_unlock
+
 # Status constants
 """
     const global STATUS_TOTAL_SIZE = 184320
@@ -23,7 +26,7 @@ Example:
 '''
     instance_id = 0
     status = status_t(0,0,0,0)
-    status_attach(instance_id, Ref(r_status))
+    status_attach(instance_id, Ref(status))
 '''
 """
 mutable struct status_t
@@ -61,7 +64,13 @@ Attach/create lock semaphore as well.  Return nonzero on error.
 """
 function status_attach(instance_id::Int, p_status::Ref{status_t})
     error::Int8 = ccall((:hashpipe_status_attach, libhashpipestatus),
-                    Int, (Int8, Ref{status_t}), instance_id, p_status)
+                    Int, (Int, Ref{status_t}), instance_id, p_status)
+    return error
+end
+
+function status_detach(p_status::Ref{status_t})
+    error::Int8 = ccall((:hashpipe_status_detach, libhashpipestatus),
+                    Int, (Ref{status_t}, ), p_status)
     return error
 end
 
@@ -89,6 +98,26 @@ function status_unlock(p_status::Ref{status_t})
     error::Int8 = ccall((:hashpipe_status_unlock, libhashpipestatus),
                     Int, (Ref{status_t},), p_status)
     return error
+end
+
+"""
+    status_buf_lock_unlock(f::Function, r_status::Ref{status_t})
+
+Safely lock and unlock a shared status buffer for updating its values. This must be done
+so that the status buffer values aren't changed by multiple processes at the same time.
+
+Example:
+
+"""
+function status_buf_lock_unlock(f::Function, r_status::Ref{status_t})
+        try
+            status_lock(r_status)
+            f() # or f(st) TODO: test which of these is better
+        catch e
+            @error "Error locking hashpipe status buffer - Error: $e"
+        finally
+            status_unlock(r_status)
+        end
 end
 
 """

@@ -1,3 +1,7 @@
+export databuf_t, databuf_desc_t, databuf_data, databuf_create, databuf_clear, databuf_attach,
+        databuf_detach, check_databuf, databuf_wait_filled, databuf_wait_free, databuf_set_filled,
+        databuf_set_free
+
 abstract type HashpipeDatabuf end
 
 """
@@ -94,7 +98,7 @@ end
 Detach a databuf from a Hashpipe instance.
 """
 function databuf_detach(p_databuf::Ptr{databuf_t})
-    error::Int = ccall((:hashpipe_databuf_attach, libhashpipe),
+    error::Int = ccall((:hashpipe_databuf_detach, libhashpipe),
                     Int, (Ptr{databuf_t},), p_databuf)
     return error
 end
@@ -231,24 +235,4 @@ function Base.display(p::Ptr{databuf_t})
     databuf::databuf_t = unsafe_wrap(Array, p, 1)[]
     display(databuf)
     return nothing
-end
-
-"""
-    status_buf_lock_unlock(f::Function, r_status::Ref{status_t})
-
-Safely lock and unlock a shared status buffer for updating its values. This must be done
-so that the status buffer values aren't changed by multiple processes at the same time.
-
-Example:
-
-"""
-function status_buf_lock_unlock(f::Function, r_status::Ref{status_t})
-        try
-            status_lock(r_status)
-            f() # or f(st) TODO: test which of these is better
-        catch e
-            @error "Error locking hashpipe status buffer - Error: $e"
-        finally
-            status_unlock(r_status)
-        end
 end

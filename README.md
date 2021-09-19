@@ -15,9 +15,13 @@ Hashpipe is a data processing pipeline engine that manages low-level resources t
     <p>TODO:</p>
 </ul>
 
+### Tips
+
+- ipcs
+
 ## Example
 
-A common use-case would be to have C-level Hashpipe threads preprocess network packets into a standard, astronomy-friendly data format. From there, Julia threads would execute the high-level data processing required. Here is what the Julia code for this scenario would look like assuming the C-level Hashpipe threads and
+A common use-case would be to have C-level Hashpipe threads preprocess network packets into a standard, astronomy-friendly data format. From there, Julia threads would execute the high-level data processing required. Here is what the Julia code for this scenario would look like assuming the C-level Hashpipe threads are already setup with the 
 
 ```
 julia code here
