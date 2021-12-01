@@ -4,8 +4,7 @@
 CurrentModule = Hashpipe
 ```
 
-<!-- ```@contents
-``` -->
+
 ```@autodocs
 Modules = [Hashpipe]
 ```
