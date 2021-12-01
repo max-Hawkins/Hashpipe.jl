@@ -1,0 +1,3 @@
+var documenterSearchIndex = {"docs":
+[{"location":"#Hashpipe.jl-Documentation","page":"Hashpipe.jl Documentation","title":"Hashpipe.jl Documentation","text":"","category":"section"},{"location":"","page":"Hashpipe.jl Documentation","title":"Hashpipe.jl Documentation","text":"databuf_data(p_databuf::Ptr{databuf_t}, block_id::Int)","category":"page"},{"location":"#Hashpipe.databuf_data-Tuple{Ptr{databuf_t}, Int64}","page":"Hashpipe.jl Documentation","title":"Hashpipe.databuf_data","text":"databuf_data(p_databuf::Ptr{databuf_t}, block_id::Int)\n\nReturn the pointer to the associated databuffer's block's data.\n\n\n\n\n\n","category":"method"}]
+}
