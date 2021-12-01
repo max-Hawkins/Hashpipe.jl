@@ -1,6 +1,7 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Hashpipe = "89861ec2-aa86-43f2-b769-fb502ce05d7b"
+Hashpipe_jll = "a3e50fc0-e135-5cb8-92f4-a3765d91b533"
 
 [compat]
 Documenter = "0.27"
