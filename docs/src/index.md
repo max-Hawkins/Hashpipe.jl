@@ -1,5 +1,14 @@
-# Hashpipe.jl Documentation
+# Hashpipe.jl's Documentation
 
-```@docs
-databuf_data(p_databuf::Ptr{databuf_t}, block_id::Int)
+```@meta
+CurrentModule = Hashpipe
+```
+
+<!-- ```@contents
+``` -->
+```@autodocs
+Modules = [Hashpipe]
+```
+
+```@index
 ```
